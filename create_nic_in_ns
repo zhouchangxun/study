@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+# DEL_NAMESPACES(ns [, ns ... ])
+#
+# Delete namespaces from the running OS
+
+function del_ns ()
+{
+  local name=$1;
+  ip netns del $name
+}
+
+# ADD_NAMESPACES(ns [, ns ... ])
+#
+# Add new namespaces, if ns exists, the old one
+# will be remove before new ones are installed.
+function add_ns ()
+{
+  local name=$1;
+  ip netns add $name || return 77
+  ip netns exec $name sysctl -w net.netfilter.nf_conntrack_helper=0
+}
+
+# NS_EXEC([namespace], [command])
+#
+# Execute 'command' in 'namespace'
+function ns_exec ()
+{
+ip netns exec $1 sh << NS_EXEC_HEREDOC
+$2
+NS_EXEC_HEREDOC
+}
+
+# ADD_VETH([port], [namespace], [ovs-br], [ip_addr] [mac_addr [gateway]])
+#
+# Add a pair of veth ports. 'port' will be added to name space 'namespace',
+# and "ovs-'port'" will be added to ovs bridge 'ovs-br'.
+#
+# The 'port' in 'namespace' will be brought up with static IP address
+# with 'ip_addr' in CIDR notation.
+#
+# Optionally, one can specify the 'mac_addr' for 'port' and the default
+# 'gateway'.
+#
+# The existing 'port' or 'ovs-port' will be removed before new ones are added.
+#
+function add_veth ()
+{
+echo bind $1 to logical switch $7
+      ip link add $1 type veth peer name ovs-$1 || return 77
+      #CONFIGURE_VETH_OFFLOADS([$1])
+      ip link set $1 netns $2
+      ip link set dev ovs-$1 up
+      ovs-vsctl add-port $3 ovs-$1 -- \
+                set interface ovs-$1 external-ids:iface-id="$7"
+      ns_exec $2 "ip addr add $4 dev $1"
+      ns_exec $2 "ip link set dev $1 up"
+
+      if test -n "$5"; then
+        ns_exec $2 "ip link set dev $1 address $5"
+      fi
+
+      if test -n "$6"; then
+        ns_exec $2 "ip route add default via $6"
+      fi
+}
+
+function main()
+{
+  add_ns vm1 
+  # ADD_VETH([port], [namespace], [ovs-br], [ip_addr] [mac_addr [gateway]])
+  add_veth tap1 vm1 br-int 192.168.0.2/24 00:00:00:00:ff:01 192.168.0.1 sw0-port1
+  ns_exec vm1 "ifconfig" 
+  # ip link del ovs-tap1
+  # del_ns test  
+}
+
+main
