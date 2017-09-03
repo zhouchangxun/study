@@ -1,0 +1,47 @@
+language: ruby
+
+rvm:
+
+  - 2.3.3
+
+before_install:
+
+  - echo "zcx:before_install..."
+
+script:
+
+  - bundle install
+
+  - bundle exec jekyll build
+
+after_success:
+
+  - git checkout -b gh-pages master
+
+  - git config user.name "zhouchangxun"
+
+  - git config user.email "changxunzhou@qq.com"
+
+  - ls
+
+  - rm -rf *
+
+  - mv ../_site/* .
+
+  - git add --all .
+
+  - git commit -m "Travis CI Auto Builder"
+
+  - git push --force https://$DEPLOY_TOKEN@github.com/zhouchangxun/blog.git gh-pages
+
+branches:
+
+  only:
+
+  - master
+
+env:
+
+  global:
+
+  - NOKOGIRI_USE_SYSTEM_LIBRARIES=true
