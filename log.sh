@@ -1,4 +1,3 @@
-[root@gateway2 node-slb]# cat log.sh 
 #!/bin/bash
 # intro: log utilty
 # author: sixloop
