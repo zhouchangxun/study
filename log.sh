@@ -1,12 +1,16 @@
+[root@gateway2 node-slb]# cat log.sh 
 #!/bin/bash
 # intro: log utilty
 # author: sixloop
 
+current_file_name=${BASH_SOURCE[0]}
 if [ "$MODULE_LOG" ]; then
+   echo "loaded module ${current_file_name} ..."
    return 0;
 fi
-export MODULE_LOG=1
 
+export MODULE_LOG=1
+##########################################################################
 cat <<EOF >/dev/null
 format: echo -e "\033[${ctrl}\033[${bg};${fg}m ${msg}\033[0m"
 \33[0m 关闭所有属性 
@@ -63,44 +67,50 @@ function _coloredlog()
     ctrl=$4
 
     control=
-    color=\\033[${fg}m
-    restore=\\033[0m
+    color="\\033[${fg}m"
+    restore="\\033[0m"
 
     if [[ "x$bg" != "x" ]];then
       color="\\033[${bg};${fg}m"
     fi
     if [[ "x$ctrl" != "x" ]];then
-      control=\\033[${ctrl}m
+      control="\\033[${ctrl}m"
     fi
 
     echo -e "${control} ${color} ${msg} ${restore}"
 }  
+
 function log_debug()  
 {  
-    _coloredlog "[debug]: $1" $FG_WHITE  
+    msg="$@"
+    _coloredlog "[debug]: $msg" $FG_WHITE  
 }  
 function log_info()  
 {  
-    _coloredlog "[info]: $1" $FG_GREEN  
+    msg="$@"
+    _coloredlog "[info]: $msg" $FG_GREEN  
 }  
 function log_warn()  
 {  
-    _coloredlog "[warn]: $1" $FG_YELLOW 
+    msg="$@"
+    _coloredlog "[warn]: $msg" $FG_YELLOW 
 }  
 function log_error()  
 {  
-    _coloredlog "[error]: $1" $FG_RED $BG_BLACK $UNDERLINE
+    msg="$@"
+    _coloredlog "[error]: $msg" $FG_RED $BG_BLACK $UNDERLINE
 }  
 
 main(){
+echo log module test...
  log="this is a log module test string"  
- log_debug "$log"  
- log_info  "$log"  
- log_warn  "$log"  
- log_error "$log"
+ log_debug "$log" 1 
+ log_info  "$log" 2 
+ log_warn  "$log" 3 
+ log_error "$log" 4
 }
 
-current_file_name=${BASH_SOURCE[0]}
+##########################################################################
 if [[ "$0" == "$current_file_name" ]] ;then
   main $@
 else
