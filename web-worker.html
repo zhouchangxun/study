@@ -1,0 +1,78 @@
+<html>  
+<body>  
+<script id="process" type="javascript/process"> 
+
+self.onmessage = function(event) {  
+	msg = event.data;
+	if(msg.cmd=="start"){
+		self.name=msg.name;
+    	console.log("start process. name : " + self.name); 
+    	importScripts(msg.url);
+	}
+
+	if(msg.cmd=="kill"){
+		
+    	console.log('process [%s] stop1...',self.name);
+    	self.close();
+    	self.postMessage("killed"); 
+	}
+
+    //self.postMessage(" i'm ready."); 
+};  
+
+self.output = function(msg){
+	self.postMessage({cmd:'stdout',msg:msg}); 
+}
+// a=setInterval(function (){
+// 	if(self.name)console.log('[%s] nothing to do ...',self.name);
+
+// }, 2000) 
+
+console.log('process env init...');
+</script> 
+<script id="worker" type="javascript/worker"> 
+
+console.log('i am running on a standalone js vm',self);
+setTimeout('output("this is output");', 3000);
+</script>  
+
+<script>  
+	function process(code,name){
+		this.name = name || 'worker-'+(task_list.length+1);
+		this.status='running';
+		this.code = code;
+		var code_blob = new Blob([code]);  
+		this.url = window.URL.createObjectURL(code_blob);
+
+
+		var worker_code=document.getElementById("process").textContent; 
+		var worker_code_url = window.URL.createObjectURL(new Blob([worker_code]));
+		this.worker = new Worker(worker_code_url);  
+
+		this.worker.onmessage = function(event) {  
+			if(event.data.cmd=='stdout'){
+				console.log('stdout:',event.data.msg);
+			}else{
+		    	console.log("Received event from process[%s]: " + event.data, this.name);  
+			}
+		}.bind(this);  
+
+
+		this.kill = function(){ 
+			this.worker.postMessage({cmd:'kill',name:this.name});
+			//this.worker.terminate();
+		};
+
+		this.worker.postMessage({cmd:'start',url:this.url,name:this.name});
+	}
+
+	var task_list=[]
+	var code=document.getElementById("worker").textContent;
+	task_list.push(new process("console.log('main code')",'test1'));
+	task_list.push(new process(code,'test2'));
+	setTimeout('task_list[0].kill();', 3000);
+	
+</script>  
+
+</body>  
+</html>
