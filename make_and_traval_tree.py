@@ -122,22 +122,26 @@ class Solution:
             cur = top.right
         return res
 
-    def traversal(self, node, order, result):
-        """traversal the tree with different order(NLR,LNR,LRN)"""
+    def traversal(self, root, order):
+        """traversal the tree with different order(*LR,L*R,LR*)"""
+        result = []
+
         def visitor(node):
             if node is not None:
                 result.append(node.val)
 
-        if node is None:
-            return
+        def _traversal(node):
+            if node is None:
+                return
+            op = {
+                    '*': lambda: visitor(node),
+                    'L': lambda: _traversal(node.left),
+                    'R': lambda: _traversal(node.right),
+            }
+            for x in order:
+                op[x]()
 
-        op = {
-                'N': lambda: visitor(node),
-                'L': lambda: self.traversal(node.left, order, result),
-                'R': lambda: self.traversal(node.right, order, result),
-        }
-        for x in order:
-            op[x]()
+        _traversal(root)
         return result
 
     def levelOrder(self, root):
@@ -170,24 +174,31 @@ class Solution:
         return res
 
 # test
-pre = 'EBCD'
-mid = 'BDCE'
-post = 'DCBE'
-pre = ''
+""" usage: 
+    python tree_traval.py 'EBCD,BDCE,'
+    python tree_traval.py ',BDCE,DCBE'
+    python tree_traval.py 'EBCD,,DCBE' 
+"""
 import sys;
 if(len(sys.argv) > 1):
     pre, mid, post = sys.argv[1].split(',')
+else:
+    # default example value
+    pre, mid, post = 'EBCD', 'BDCE', ''
 print('input:pre:[{}], mid:[{}], post:[{}]'.format(pre, mid, post))
 
 solution = Solution()
 root = solution.buildTree(list(pre), list(mid), list(post))
+
 print('make tree:')
 for level in solution.levelOrder(root):
     print(level)
+
 print('reverse method:')
-print('pre:', solution.traversal(root, 'NLR', []) )
-print('mid:', solution.traversal(root, 'LNR', []) )
-print('post:', solution.traversal(root, 'LRN', []) )
+print('pre:', solution.traversal(root, '*LR'))
+print('mid:', solution.traversal(root, 'L*R'))
+print('post:', solution.traversal(root, 'LR*'))
+
 print('non-reverse method:')
 print(solution.preorderTraversal(root))
 print(solution.inorderTraversal(root))
